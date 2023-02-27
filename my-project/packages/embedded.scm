@@ -14,7 +14,7 @@
       (name "k64f-temp-firmware")
       (version (git-version "0.0" "0" commit))
       (home-page %project-home-page)
-      (source (origin (method (git-fetch))
+      (source (origin (method git-fetch)
 		      (uri (git-reference
 			    (url "https://github.com/paperclip4465/k64f-temp-firmware")
 			    (commit commit)))
