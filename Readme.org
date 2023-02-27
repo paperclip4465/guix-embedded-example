@@ -1,0 +1,8 @@
+* guix-embedded-example
+
+This project is meant to demonstrate embedded project management with
+GNU Guix.
+
+It contains definitions for a simple embedded program, an MCUBoot
+bootloader, a ~mosquitto-broker-service-type~ definition, and a
+VM definition which can be ~guix deploy~'ed to.
