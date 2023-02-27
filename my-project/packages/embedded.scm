@@ -1,6 +1,8 @@
 (define-module (my-project packages embedded)
   #:use-module ((guix licenses) :prefix license:)
+  #:use-module (guix gexp)
   #:use-module (guix packages)
+  #:use-module (guix git-download)
   #:use-module (zephyr build-system zephyr)
   #:use-module (zephyr packages zephyr)
   #:use-module (zephyr packages zephyr-xyz)
@@ -46,3 +48,18 @@ UDP that can be used for firmware update/device controll.")
        (string-append (package-description base)
 		      "This firmware is linked against the primary
 image slot and must be loaded by mcuboot. (see device tree)")))))
+
+
+(define-public k64f-bootloader
+  (let ((mcuboot (make-mcuboot "frdm_k64f"
+			       ;; Use special dev key instead of production
+			       (local-file "../../dev.pem")
+			       #:extra-zephyr-modules (list hal-cmsis hal-nxp)
+			       #:extra-configure-flags
+			       '(;; k64 doesn't have fancy crypto hardware
+				 ;; so we cannot use RSA keys.
+				 "-DCONFIG_BOOT_SIGNATURE_TYPE_ECDSA_P256=y"
+				 "-DCONFIG_BOOT_SIGNATURE_TYPE_RSA=n"
+				 "-DCONFIG_BOOT_ECDSA_TINYCRYPT=y"))))
+    (package (inherit mcuboot)
+	     (name "k64f-bootloader"))))
