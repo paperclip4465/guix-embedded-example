@@ -1,17 +1,22 @@
 (define-module (my-project packages embedded)
   #:use-module ((guix licenses) :prefix license:)
   #:use-module (guix gexp)
+  #:use-module (guix utils)
   #:use-module (guix packages)
   #:use-module (guix git-download)
   #:use-module (zephyr build-system zephyr)
   #:use-module (zephyr packages zephyr)
   #:use-module (zephyr packages zephyr-xyz)
+  #:use-module (ice-9 format)
   #:use-module (my-project))
 
+(define %firmware-signing-key
+  (local-file "../../dev.pem"))
+
 (define-public k64f-temp-firmware-stand-alone
-  (let ((commit "a4bc0cd5213af7448d690fe873633ec4f7c86f51"))
+  (let ((commit "b32844ee722375c042cdd9a5f6b70c6716979f79"))
     (package
-      (name "k64f-temp-firmware")
+      (name "k64f-temp-firmware-stand-alone")
       (version (git-version "0.0" "0" commit))
       (home-page %project-home-page)
       (source (origin (method git-fetch)
@@ -20,7 +25,7 @@
 			    (commit commit)))
 		      (file-name (git-file-name name version))
 		      (sha256
-		       (base32 "120gwwxrc1sszm0wzxdyla5q29q1cprsxxr73xx027kxgbb6m3mw"))))
+		       (base32 "1g5q8yzsrrsbd6z4h9hnspccrgswcr4d31y0r2sz2hns53lz8kp4"))))
       (build-system zephyr-build-system)
       (outputs '("out" "debug"))
       (inputs (list hal-nxp
