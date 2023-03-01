@@ -102,5 +102,49 @@ UDP that can be used for firmware update/device control.")
 				 "-DCONFIG_BOOT_SIGNATURE_TYPE_ECDSA_P256=y"
 				 "-DCONFIG_BOOT_SIGNATURE_TYPE_RSA=n"
 				 "-DCONFIG_BOOT_ECDSA_TINYCRYPT=y"))))
-    (package (inherit mcuboot)
+    (package
+      (inherit mcuboot)
       (name "k64f-bootloader"))))
+
+(define-public k64f-provision
+  (let ((base (signed-firmware k64f-temp-firmware %firmware-signing-key #t)))
+    (package
+      (inherit base)
+      (name "k64f-provision")
+      (native-inputs
+       (modify-inputs (package-native-inputs base)
+	 (prepend k64f-bootloader)))
+
+      (arguments
+       (substitute-keyword-arguments (package-arguments base)
+	 ((#:phases phases)
+	  `(modify-phases ,phases
+	     (add-after 'install 'make-image
+	       (lambda* (#:key outputs inputs bin-name #:allow-other-keys)
+		 (let* ((out (string-append (assoc-ref outputs "out") "/firmware"))
+			(mcuboot (string-append
+				  (assoc-ref inputs "k64f-bootloader")
+				  "/firmware/mcuboot.bin"))
+			(firmware (string-append out "/k64f-temp.bin"))
+			(img (string-append out "/k64f-provision.bin")))
+		   (define-syntax dd-arg
+		     (syntax-rules ()
+		       ((dd-arg arg val)
+			(string-append arg "=" val))))
+
+		   (system* "dd"
+			    (dd-arg "if" mcuboot)
+			    (dd-arg "of" img)
+			    (dd-arg "status" "progress"))
+		   (system* "dd"
+			    (dd-arg "if" firmware)
+			    (dd-arg "of" img)
+			    (dd-arg "status" "progress")
+			    ;; place in primary image slot
+			    (dd-arg "seek"
+				    (number->string (/ #x20000
+						       512)))))))))))
+      (description (string-append "This firmware is suitable for provisionment.\n"
+				  "It contains a bootloader and an updatable application.\n"
+				  "Flash to address 0x0.\n"
+				  (package-description base))))))
