@@ -14,10 +14,10 @@
   (local-file "../../dev.pem"))
 
 (define-public k64f-temp-firmware-stand-alone
-  (let ((commit "b32844ee722375c042cdd9a5f6b70c6716979f79"))
+  (let ((commit "v0.0.1"))
     (package
       (name "k64f-temp-firmware-stand-alone")
-      (version (git-version "0.0" "0" commit))
+      (version "0.0.1")
       (home-page %project-home-page)
       (source (origin (method git-fetch)
 		      (uri (git-reference
@@ -25,7 +25,7 @@
 			    (commit commit)))
 		      (file-name (git-file-name name version))
 		      (sha256
-		       (base32 "1g5q8yzsrrsbd6z4h9hnspccrgswcr4d31y0r2sz2hns53lz8kp4"))))
+		       (base32 "1ysmbazgj8jbnz1jbb6n8l4srs1jnjj7r9lsvhwzjxaqygikal84"))))
       (build-system zephyr-build-system)
       (outputs '("out" "debug"))
       (inputs (list hal-nxp
