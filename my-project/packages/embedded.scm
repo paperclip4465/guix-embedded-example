@@ -84,11 +84,13 @@ UDP that can be used for firmware update/device control.")
       (name "k64f-temp-firmware")
       (arguments
        `(#:configure-flags '("-DCONFIG_BOOTLOADER_MCUBOOT=y"
-			     "-DCONFIG_ROM_START_OFFSET=0x200")
+			     "-DCONFIG_ROM_START_OFFSET=0x200"
+
+			     )
 	 ,@(package-arguments base))))))
 
 (define-public k64f-temp-firmware-signed
-  (let ((base (signed-firmware k64f-temp-firmware %firmware-signing-key)))
+  (let ((base (signed-firmware k64f-temp-firmware)))
     (package
       (inherit base)
       (name "k64f-temp-firmware-signed"))))
@@ -107,7 +109,7 @@ UDP that can be used for firmware update/device control.")
       (name "k64f-bootloader"))))
 
 (define-public k64f-provision
-  (let ((base (signed-firmware k64f-temp-firmware %firmware-signing-key #t)))
+  (let ((base (signed-firmware k64f-temp-firmware #t)))
     (package
       (inherit base)
       (name "k64f-provision")
