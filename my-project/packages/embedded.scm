@@ -2,6 +2,7 @@
   #:use-module ((guix licenses) :prefix license:)
   #:use-module (guix gexp)
   #:use-module (guix utils)
+  #:use-module (guix build utils)
   #:use-module (guix packages)
   #:use-module (guix git-download)
   #:use-module (zephyr build-system zephyr)
@@ -42,38 +43,55 @@ and publishes it over MQTT. In addition it also implements an SMP server over
 UDP that can be used for firmware update/device control.")
       (license license:gpl3+))))
 
+(define* (signed-firmware firmware #:optional confirmed?)
+  "Adds a signing phases to FIRMWARE."
+  (package
+    (inherit firmware)
+    (arguments
+     `(#:phases
+       (modify-phases %standard-phases
+	 ;; Replace output binary with signed version.
+	 (add-before 'install 'sign-firmware
+	   (lambda* (#:key inputs #:allow-other-keys)
+	     (let ((bin "zephyr/zephyr.bin")
+		   (unsigned "zephyr/zephyr.unsigned.bin")
+		   (key (assoc-ref inputs "signing-key")))
+	       (copy-file bin unsigned)
+
+	       (let ((imgtool-args `("imgtool" "sign"
+				     "--key" ,key
+				     "--align" "4"
+				     "--header-size" "0x200"
+				     "--slot-size" "0x60000"
+				     "--version" ,,(package-version firmware)
+				     "--pad"
+				     ,@(if ,confirmed? (list "--confirm") '())
+				     ,unsigned ,bin)))
+		 (format #t "~{~a~^ ~}~&" imgtool-args)
+		 (apply system* imgtool-args))))))
+       ,@(package-arguments firmware)))
+    (native-inputs
+     (append `(("signing-key" ,%firmware-signing-key)
+	       ("imgtool" ,imgtool))
+	     (package-native-inputs firmware)))
+    (description (string-append "Signed firmware suitable for MCUBOOT\n\n"
+				(package-description firmware)))))
+
 (define-public k64f-temp-firmware
   (let ((base k64f-temp-firmware-stand-alone))
-    (package (inherit base)
+    (package
+      (inherit base)
       (name "k64f-temp-firmware")
       (arguments
        `(#:configure-flags '("-DCONFIG_BOOTLOADER_MCUBOOT=y"
 			     "-DCONFIG_ROM_START_OFFSET=0x200")
-	 #:phases
-	 (modify-phases %standard-phases
-	   ;; Replace output binary with signed version.
-	   (add-before 'install 'sign-firmware
-	     (lambda* (#:key inputs #:allow-other-keys)
-	       (let ((bin "zephyr/zephyr.bin")
-		     (unsigned "zephyr/zephyr.unsigned.bin")
-		     (key (assoc-ref inputs "signing-key")))
-		 (format #t "Signing firmware with key ~a~&" key)
-		 (copy-file bin unsigned)
-		 (system* "imgtool" "sign"
-			  "--key" key
-			  "--align" "4"
-			  "--header-size" "0x200"
-			  "--slot-size" "0x60000"
-			  "--version" "0.0.0"
-			  "--confirm"
-			  unsigned bin)))))
-	 ,@(package-arguments base)))
-      (native-inputs
-       (append `(("signing-key" ,%firmware-signing-key)
-		 ("imgtool" ,imgtool))
-	       (package-native-inputs base)))
-      (description (string-append "Signed firmware suitable for MCUBOOT\n\n"
-				  (package-description base))))))
+	 ,@(package-arguments base))))))
+
+(define-public k64f-temp-firmware-signed
+  (let ((base (signed-firmware k64f-temp-firmware %firmware-signing-key)))
+    (package
+      (inherit base)
+      (name "k64f-temp-firmware-signed"))))
 
 (define-public k64f-bootloader
   (let ((mcuboot (make-mcuboot "frdm_k64f" %firmware-signing-key
