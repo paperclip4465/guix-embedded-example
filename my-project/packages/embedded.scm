@@ -34,7 +34,7 @@
 		    zephyr-mcuboot))
       (arguments
        `(#:zephyr ,zephyr-3.1
-	 #:bin-name "k64-temp"
+	 #:bin-name "k64f-temp"
 	 #:board "frdm_k64f"))
       (synopsis "Temperature measurement firmware for k64f")
       (description "This firmware measures the temperature every 60 seconds
